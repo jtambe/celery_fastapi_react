@@ -1,0 +1,60 @@
+version: '3.8'
+services:
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+  redis-commander:
+    image: rediscommander/redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - "5672:5672"    # RabbitMQ main port
+      - "15672:15672"  # Management UI
+  celery:
+    build:
+      context: ./celery_tasks
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379
+      CELERY_RESULT_BACKEND: redis://redis:6379
+  celery_rabbitmq:
+    build:
+      context: ./celery_rabbitmq
+      dockerfile: Dockerfile
+    depends_on:
+      - rabbitmq
+    environment:
+      CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+      CELERY_RESULT_BACKEND: rpc://
+  fast_api:
+    build:
+      context: ./fast_api
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./fast_api:/app/fast_api
+    depends_on:
+      - redis
+      - rabbitmq
+  react_app:
+    build:
+      context: ./react_app
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - fast_api
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000
+      - CHOKIDAR_USEPOLLING=true # needed for hot reloading within containers on some systems
+    volumes:
+      - ./react_app/src:/app/src  # Mount your local src directory to the container's /app/src
+      - ./react_app/public:/app/public # Mount your local public directory to the container's /app/public

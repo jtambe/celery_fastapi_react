@@ -21,18 +21,18 @@ def process(x, y):
     while i < 5:
         sleep(10)
         i += 1
-        print("Processing...")
+        print("Processing through Redis broker...")
 
     return x**2 + y**2
 
-@app.task
-def process2(x, y):
-    i = 0
-    while i < 5:
-        sleep(1)
-        i += 1
-        print("Processing...")
-    return x + y
+# @app.task
+# def process2(x, y):
+#     i = 0
+#     while i < 5:
+#         sleep(1)
+#         i += 1
+#         print("Processing...")
+#     return x + y
 
 
 def get_task_result(task_id):

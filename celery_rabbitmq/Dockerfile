@@ -11,5 +11,4 @@ COPY . /app
 RUN uv pip install --system .
 
 
-CMD ["python", "-m", "celery", "-A", "celery_task", "worker", "--loglevel=info"]
-#CMD ["celery", "-A", "celery_tasks.celery_task", "worker", "--loglevel=info"]
+CMD ["python", "-m", "celery", "-A", "celery_rabbitmq_task", "worker", "-Q", "rabbitmq_queue", "--loglevel=info"]

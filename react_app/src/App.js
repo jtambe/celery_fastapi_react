@@ -47,8 +47,8 @@ function App() {
       <h2>Create Task</h2>
       <input placeholder="Number A" value={numberA} onChange={e => setNumberA(e.target.value)} />
       <input placeholder="Number B" value={numberB} onChange={e => setNumberB(e.target.value)} />
-      <button onClick={() => handleCreateTask('process')} disabled={loading}>Create Process Task</button>
-      <button onClick={() => handleCreateTask('process2')} disabled={loading}>Create Process2 Task</button>
+      <button onClick={() => handleCreateTask('process')} disabled={loading}>Create Redis Broker Task</button>
+      <button onClick={() => handleCreateTask('process2')} disabled={loading}>Create RabbitMQ Task</button>
 
       <h2>All Tasks</h2>
       <ul>

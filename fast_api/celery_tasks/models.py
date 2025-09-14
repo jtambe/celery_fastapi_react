@@ -8,3 +8,4 @@ class Numbers(BaseModel):
 class Task(BaseModel):
     id: str
     status: Optional[str] = None
+    result: Optional[int] = None
