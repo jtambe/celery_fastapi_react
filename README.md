@@ -17,3 +17,6 @@ Additional Information:
 - Redis commander can be accessed at `http://localhost:8081` to monitor Redis data.
 - RabbitMQ management interface can be accessed at `http://localhost:15672` with default
 - FastAPI documentation is available at `http://localhost:5000/docs`.
+
+
+![img.png](img.png)
