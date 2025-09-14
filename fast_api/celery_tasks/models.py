@@ -6,6 +6,6 @@ class Numbers(BaseModel):
     numberB: int
 
 class Task(BaseModel):
-    id: str
+    task_id: str
     status: Optional[str] = None
     result: Optional[int] = None

@@ -1,37 +1,33 @@
 from celery import Celery
 import redis.asyncio as aioredis
-from .models import Numbers, Task
+from .models import Numbers
+import os
+from .models import Task
 from fastapi import APIRouter, Query
 from celery.result import AsyncResult
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 import logging
+from fast_api.database import get_db
 
 logger = logging.getLogger(__name__)
-celery_client = Celery(
-    broker="redis://redis:6379",
-    backend="redis://redis:6379"
-)
-celery_rabbitmq_client = Celery(
-    broker="amqp://guest:guest@rabbitmq:5672//",
-    backend="rpc://"
-)
+
+redis_broker_url = os.getenv("CELERY_REDIS_BROKER_URL")
+redis_backend_url = os.getenv("CELERY_REDIS_RESULT_BACKEND")
+celery_client = Celery(broker=redis_broker_url, backend=redis_backend_url)
+
+rabbitmq_broker_url = os.getenv("CELERY_RABBITMQ_BROKER_URL")
+rabbitmq_backend_url = os.getenv("CELERY_RABBITMQ_RESULT_BACKEND")
+celery_rabbitmq_client = Celery(broker=rabbitmq_broker_url,backend=rabbitmq_backend_url)
+
 # import redis ## only sync version not async
 # redis_client = redis.Redis(host="redis", port=6379, decode_responses=True)
-redis_client = aioredis.Redis(
-    host="redis",
-    port=6379,
-    decode_responses=True
-)
+redis_client = aioredis.Redis(host="redis",port=6379,decode_responses=True)
 TASK_SET_KEY = "celery_task_id"
-RABBITMQ_TASK_SET_KEY = "rabbitmq_task_id"
 
 router = APIRouter()
 
-'''
-{
-  "numberA": 4,
-  "numberB": 2
-}
-'''
 @router.post("/api/v0/process")
 async def process_task(numbers: Numbers):
     task = celery_client.send_task("celery_task.process", args=[numbers.numberA, numbers.numberB])
@@ -46,13 +42,16 @@ async def process_task(numbers: Numbers):
 '''
 @router.post("/api/v0/process2")
 async def process2_task(numbers: Numbers):
-    task = celery_rabbitmq_client.send_task(
-        "celery_rabbitmq_task.process2",
-        args=[numbers.numberA, numbers.numberB],
-        queue="rabbitmq_queue"
-    )
-    await redis_client.sadd(RABBITMQ_TASK_SET_KEY, task.id)
-    return {"status": "Message received and queued for processing"}
+    try:
+        task = celery_rabbitmq_client.send_task(
+            "celery_rabbitmq_task.process2",
+            args=[numbers.numberA, numbers.numberB],
+            queue="rabbitmq_queue"
+        )
+        return {"status": "Message received and queued for processing", "task_id": task.id}
+    except Exception as e:
+        logger.error(f"DB error: {e}")
+        return {"status": "Error", "message": "something went wrong"}
 
 
 @router.get("/api/v0/task_status")
@@ -86,10 +85,9 @@ async def get_task_result(task_id: str = Query(...)):
 @router.get("/api/v0/all_tasks")
 async def get_all_tasks():
     task_ids = await redis_client.smembers(TASK_SET_KEY)
-    rabbitmq_task_ids = await redis_client.smembers(RABBITMQ_TASK_SET_KEY)
     tasks = []
-    for task_id in set(task_ids) | set(rabbitmq_task_ids):
-        app = celery_client if task_id in task_ids else celery_rabbitmq_client
+    for task_id in task_ids:
+        app = celery_client
         result = AsyncResult(task_id, app=app)
         tasks.append({
             "task_id": task_id,

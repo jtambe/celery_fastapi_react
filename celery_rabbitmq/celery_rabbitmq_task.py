@@ -5,28 +5,26 @@ from time import sleep
 from celery.result import AsyncResult
 # celery -A celery_rabbitmq.celery_rabbitmq_task worker -l info
 
-# app = celery(main="tasks", broker="pyamqp://guest:guest@localhost//", backend="rpc://")
-# http://localhost:15672/#/
-app = Celery(main="tasks", broker="pyamqp://", backend="rpc://")
-
-# @app.task
-# def process(x, y):
-#     i = 0
-#     while i < 5:
-#         sleep(10)
-#         i += 1
-#         print("Processing...")
-#
-#     return x**2 + y**2
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
+broker_url = os.getenv("CELERY_RABBITMQ_BROKER_URL")
+backend_url = os.getenv("CELERY_RABBITMQ_RESULT_BACKEND")
+app = Celery("tasks", broker=broker_url, backend=backend_url)
 
 @app.task
 def process2(x, y):
-    i = 0
-    while i < 5:
-        sleep(1)
-        i += 1
-        print("Processing through rabbitmq...")
-    return x + y
+    try:
+        i = 0
+        while i < 5:
+            sleep(1)
+            i += 1
+            print("Processing through rabbitmq...")
+        print(f"Processing x={x}, y={y}")
+        if x == -1:  # Simulate failure for a specific input
+            raise ValueError("Simulated task failure")
+        return x + y
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        raise e
 
 
 def get_task_result(task_id):

@@ -30,9 +30,12 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - rabbitmq
+      - postgres
     environment:
-      CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
-      CELERY_RESULT_BACKEND: rpc://
+      CELERY_RABBITMQ_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+      CELERY_RABBITMQ_RESULT_BACKEND: db+postgresql://myuser:mypassword@postgres:5432/mydb
+#      CELERY_RABBITMQ_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+#      CELERY_RABBITMQ_RESULT_BACKEND: rpc://
   fast_api:
     build:
       context: ./fast_api
@@ -44,6 +47,13 @@ services:
     depends_on:
       - redis
       - rabbitmq
+    environment:
+      CELERY_REDIS_BROKER_URL: redis://redis:6379
+      CELERY_REDIS_RESULT_BACKEND: redis://redis:6379
+      CELERY_RABBITMQ_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+      CELERY_RABBITMQ_RESULT_BACKEND: db+postgresql://myuser:mypassword@postgres:5432/mydb
+#      CELERY_RABBITMQ_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+#      CELERY_RABBITMQ_RESULT_BACKEND: rpc://
   react_app:
     build:
       context: ./react_app
@@ -58,3 +68,16 @@ services:
     volumes:
       - ./react_app/src:/app/src  # Mount your local src directory to the container's /app/src
       - ./react_app/public:/app/public # Mount your local public directory to the container's /app/public
+  postgres:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
