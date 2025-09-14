@@ -20,3 +20,7 @@ Additional Information:
 
 
 ![img.png](img.png)
+
+
+Technical Architecture:
+![img_1.png](img_1.png)
