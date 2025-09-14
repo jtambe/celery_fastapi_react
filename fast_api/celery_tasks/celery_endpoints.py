@@ -2,11 +2,13 @@ from celery import Celery
 import redis.asyncio as aioredis
 from .models import Numbers
 import os
-from .models import Task
+from .schema import CeleryTaskMeta
 from fastapi import APIRouter, Query
 from celery.result import AsyncResult
 from fastapi import Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import select
+import pickle
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 from fast_api.database import get_db
@@ -82,16 +84,29 @@ async def get_task_result(task_id: str = Query(...)):
         "result": result.result if result.ready() else None
     }
 
+def _safe_result(result):
+    if isinstance(result, (str, int, float, bool)):
+        return result
+    return ""
+
 @router.get("/api/v0/all_tasks")
-async def get_all_tasks():
+async def get_all_tasks(db: AsyncSession = Depends(get_db)):
     task_ids = await redis_client.smembers(TASK_SET_KEY)
+    pg_sql_db_result = await db.execute(select(CeleryTaskMeta))
+    rabbitmq_tasks = pg_sql_db_result.scalars().all()
     tasks = []
     for task_id in task_ids:
-        app = celery_client
-        result = AsyncResult(task_id, app=app)
+        result = AsyncResult(task_id, app=celery_client)
         tasks.append({
             "task_id": task_id,
             "status": result.status,
-            "result": result.result if result.ready() else None
+            "result": _safe_result(result.result) if result.ready() else ""
+        })
+    for t in rabbitmq_tasks:
+        raw_result = pickle.loads(t.result) if t.result else ""
+        tasks.append({
+            "task_id": t.task_id,
+            "status": t.status,
+            "result": _safe_result(raw_result),
         })
     return tasks
