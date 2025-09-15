@@ -8,6 +8,7 @@ dependencies = [
     "celery>=5.5.3",
     "redis>=6.4.0",
     "python-dotenv>=1.0.0",
+    "pytest>=8.4.2",
 ]
 
 [tool.setuptools]
