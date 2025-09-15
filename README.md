@@ -1,3 +1,6 @@
+Technical Architecture:
+![img_1.png](img_1.png)
+
 This Entire Repository Contains:
 - A React front-end application that allows users to submit long-running tasks and check their status.
 - A FastAPI backend that handles incoming requests from the React app and queues tasks in Celery workers.
@@ -22,5 +25,3 @@ Additional Information:
 ![img.png](img.png)
 
 
-Technical Architecture:
-![img_1.png](img_1.png)
